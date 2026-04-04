@@ -17,14 +17,24 @@ dotenv.config({ path: resolve(workspaceRoot, '.env'), override: false })
 const app = express()
 const port = process.env.PORT || 5001
 const mongoUri = process.env.MONGODB_URI
-const allowedOrigins = (
-  process.env.CLIENT_URLS ||
-  process.env.CLIENT_URL ||
-  'http://localhost:5173,http://127.0.0.1:5173,http://localhost:4173,http://127.0.0.1:4173,http://localhost:3000,http://127.0.0.1:3000'
-)
-  .split(',')
+const defaultAllowedOrigins = [
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
+  'http://localhost:5174',
+  'http://127.0.0.1:5174',
+  'http://localhost:4173',
+  'http://127.0.0.1:4173',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000',
+  'https://arthqadvisory.in',
+  'https://www.arthqadvisory.in'
+]
+const configuredOrigins = [process.env.CLIENT_URLS, process.env.CLIENT_URL]
+  .filter(Boolean)
+  .flatMap((value) => value.split(','))
   .map((origin) => origin.trim())
   .filter(Boolean)
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...configuredOrigins])]
 const corsOptions = {
   origin(origin, callback) {
     // Allow server-to-server requests and tools like curl/postman with no Origin header.

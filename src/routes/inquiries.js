@@ -7,7 +7,7 @@ const router = Router()
 
 router.post('/', async (req, res) => {
   try {
-    const { errors, sanitized } = validateInquiryPayload(req.body)
+    const { errors, sanitized } = await validateInquiryPayload(req.body)
 
     if (Object.keys(errors).length > 0) {
       return res.status(400).json({
@@ -26,20 +26,34 @@ router.post('/', async (req, res) => {
       message
     })
 
-    const emailResult = await sendInquiryNotification({
-      name,
-      email,
-      phone,
-      service,
-      message
-    })
+    let emailResult = {
+      sent: false,
+      reason: 'Email delivery was not attempted.'
+    }
+
+    try {
+      emailResult = await sendInquiryNotification({
+        name,
+        email,
+        phone,
+        service,
+        message
+      })
+    } catch (emailError) {
+      console.error('Error sending inquiry email:', emailError)
+      emailResult = {
+        sent: false,
+        reason: emailError.message || 'Unable to send inquiry email.'
+      }
+    }
 
     return res.status(201).json({
       message: emailResult.sent
         ? 'Inquiry created successfully.'
-        : 'Inquiry created successfully, but email notification is not configured yet.',
+        : 'Inquiry created successfully, but email delivery failed.',
       inquiry,
-      emailSent: emailResult.sent
+      emailSent: emailResult.sent,
+      ...(emailResult.reason ? { emailError: emailResult.reason } : {})
     })
   } catch (error) {
     console.error('Error creating inquiry:', error)
