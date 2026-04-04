@@ -25,27 +25,28 @@ const allowedOrigins = (
   .split(',')
   .map((origin) => origin.trim())
   .filter(Boolean)
+const corsOptions = {
+  origin(origin, callback) {
+    // Allow server-to-server requests and tools like curl/postman with no Origin header.
+    if (!origin) {
+      return callback(null, true)
+    }
 
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', '*')
-  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization')
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true)
+    }
 
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(204)
-  }
-
-  return next()
-})
+    return callback(new Error(`CORS blocked for origin: ${origin}`))
+  },
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 204
+}
 
 app.use(
-  cors({
-    origin: true,
-    methods: ['GET', 'POST', 'OPTIONS'],
-    allowedHeaders: ['Content-Type']
-  })
+  cors(corsOptions)
 )
-app.options('*', cors())
+app.options('*', cors(corsOptions))
 app.use(express.json())
 
 app.get('/api/health', (_req, res) => {
@@ -56,8 +57,8 @@ app.use('/api/inquiries', inquiryRoutes)
 
 connectDatabase(mongoUri)
   .then(() => {
-    app.listen(port, () => {
-      console.log(`Server running on port ${port}`)
+    app.listen(port, '0.0.0.0', () => {
+      console.log(`Server running on 0.0.0.0:${port}`)
     })
   })
   .catch((error) => {
