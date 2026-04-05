@@ -53,7 +53,7 @@ router.post('/', async (req, res) => {
         : 'Inquiry created successfully, but email delivery failed.',
       inquiry,
       emailSent: emailResult.sent,
-      ...(emailResult.reason ? { emailError: emailResult.reason } : {})
+      ...(process.env.NODE_ENV !== 'production' && emailResult.reason ? { emailError: emailResult.reason } : {})
     })
   } catch (error) {
     console.error('Error creating inquiry:', error)

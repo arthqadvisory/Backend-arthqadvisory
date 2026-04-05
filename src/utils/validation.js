@@ -1,5 +1,3 @@
-import dns from 'node:dns/promises'
-
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const phonePattern = /^[0-9+\-\s()]{7,20}$/
 const disposableDomains = new Set([
@@ -9,30 +7,6 @@ const disposableDomains = new Set([
   'guerrillamail.com',
   'yopmail.com'
 ])
-
-async function hasDeliverableEmailDomain(email) {
-  const [, domain = ''] = email.split('@')
-
-  if (!domain || disposableDomains.has(domain)) {
-    return false
-  }
-
-  try {
-    const mxRecords = await dns.resolveMx(domain)
-    if (mxRecords.length > 0) {
-      return true
-    }
-  } catch {
-    // Fall back to A/AAAA resolution for domains that accept mail without MX.
-  }
-
-  try {
-    await Promise.any([dns.resolve4(domain), dns.resolve6(domain)])
-    return true
-  } catch {
-    return false
-  }
-}
 
 export async function validateInquiryPayload(payload) {
   const errors = {}
@@ -52,7 +26,7 @@ export async function validateInquiryPayload(payload) {
     errors.email = 'Email is required.'
   } else if (!emailPattern.test(email)) {
     errors.email = 'Enter a valid email address.'
-  } else if (!(await hasDeliverableEmailDomain(email))) {
+  } else if (disposableDomains.has(email.split('@')[1])) {
     errors.email = 'Enter a valid email address that can receive mail.'
   }
 
