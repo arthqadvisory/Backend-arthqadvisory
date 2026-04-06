@@ -70,6 +70,12 @@ export async function sendInquiryNotification({ name, email, phone, service, mes
   const safeService = escapeHtml(service)
   const safeMessage = escapeHtml(message)
   const fromAddress = resolveFromAddress()
+  const result = {
+    sent: false,
+    notificationSent: false,
+    acknowledgementSent: false,
+    reason: ''
+  }
 
   await transport.sendMail({
     from: fromAddress,
@@ -98,44 +104,51 @@ export async function sendInquiryNotification({ name, email, phone, service, mes
     `
   })
 
+  result.notificationSent = true
+  result.sent = true
+
   if (acknowledgementEnabled) {
-    await transport.sendMail({
-      from: fromAddress,
-      sender: process.env.SMTP_USER,
-      to: email,
-      replyTo: inquiryRecipient,
-      subject: 'We received your inquiry',
-      text: [
-        `Hello ${name},`,
-        '',
-        'Thank you for contacting ArthQ Advisory.',
-        `We have received your inquiry about "${service}" and our team will get back to you shortly.`,
-        '',
-        'Submitted details:',
-        `Phone: ${safePhone}`,
-        `Service: ${service}`,
-        '',
-        'Message:',
-        message,
-        '',
-        'Regards,',
-        'ArthQ Advisory'
-      ].join('\n'),
-      html: `
-        <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #10212b;">
-          <h2 style="margin-bottom: 16px;">Thank you for contacting ArthQ Advisory</h2>
-          <p>Hello ${safeName},</p>
-          <p>We have received your inquiry about <strong>${safeService}</strong> and our team will get back to you shortly.</p>
-          <p><strong>Phone:</strong> ${safePhoneHtml}</p>
-          <p><strong>Message:</strong></p>
-          <p style="white-space: pre-wrap;">${safeMessage}</p>
-          <p style="margin-top: 24px;">Regards,<br />ArthQ Advisory</p>
-        </div>
-      `
-    })
+    try {
+      await transport.sendMail({
+        from: fromAddress,
+        sender: process.env.SMTP_USER,
+        to: email,
+        replyTo: inquiryRecipient,
+        subject: 'We received your inquiry',
+        text: [
+          `Hello ${name},`,
+          '',
+          'Thank you for contacting ArthQ Advisory.',
+          `We have received your inquiry about "${service}" and our team will get back to you shortly.`,
+          '',
+          'Submitted details:',
+          `Phone: ${safePhone}`,
+          `Service: ${service}`,
+          '',
+          'Message:',
+          message,
+          '',
+          'Regards,',
+          'ArthQ Advisory'
+        ].join('\n'),
+        html: `
+          <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #10212b;">
+            <h2 style="margin-bottom: 16px;">Thank you for contacting ArthQ Advisory</h2>
+            <p>Hello ${safeName},</p>
+            <p>We have received your inquiry about <strong>${safeService}</strong> and our team will get back to you shortly.</p>
+            <p><strong>Phone:</strong> ${safePhoneHtml}</p>
+            <p><strong>Message:</strong></p>
+            <p style="white-space: pre-wrap;">${safeMessage}</p>
+            <p style="margin-top: 24px;">Regards,<br />ArthQ Advisory</p>
+          </div>
+        `
+      })
+      result.acknowledgementSent = true
+    } catch (error) {
+      result.reason = error.message || 'Acknowledgement email failed.'
+      console.error('Error sending acknowledgement email:', error)
+    }
   }
 
-  return {
-    sent: true
-  }
+  return result
 }
