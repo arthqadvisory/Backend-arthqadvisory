@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer'
 
-const inquiryRecipient = process.env.INQUIRY_NOTIFICATION_EMAIL || 'arthqadvisory@gmail.com'
+const inquiryRecipient = process.env.INQUIRY_NOTIFICATION_EMAIL || 'info@arthqadvisory.in'
 const acknowledgementEnabled = process.env.SEND_INQUIRY_ACKNOWLEDGEMENT !== 'false'
 
 function escapeHtml(value) {
